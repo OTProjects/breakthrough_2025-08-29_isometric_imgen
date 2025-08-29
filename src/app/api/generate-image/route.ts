@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { prompt, imageData, mimeType } = await request.json();
+    
+    console.log('API Key status:', process.env.GEMINI_API_KEY ? 'Present' : 'Missing');
+    console.log('Request data:', { hasImage: !!imageData, mimeType, prompt: prompt.substring(0, 50) + '...' });
 
     // Prepare the request body
     const requestParts: any[] = [{ text: prompt }];
@@ -19,21 +22,30 @@ export async function POST(request: NextRequest) {
     const requestBody = {
       contents: [{
         parts: requestParts
-      }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      }
     };
 
-    // Make API call from server-side (more secure)
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent', {
+    console.log('Making request to Gemini API...');
+    
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GEMINI_API_KEY || ''
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
     });
 
+    console.log('Response status:', response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
+      console.log('API Error response:', errorText);
       return NextResponse.json(
         { error: `API Error: ${response.status} - ${errorText}` },
         { status: response.status }
