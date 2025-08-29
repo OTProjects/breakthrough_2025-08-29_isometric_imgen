@@ -22,7 +22,7 @@ interface InlineDataPart {
   };
 }
 
-type RequestPart = TextPart | InlineDataPart;
+// type RequestPart = TextPart | InlineDataPart;
 
 interface ResponsePart {
   text?: string;

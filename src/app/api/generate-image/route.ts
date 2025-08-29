@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     console.log('Request data:', { hasImage: !!imageData, mimeType, prompt: prompt.substring(0, 50) + '...' });
 
     // Prepare the request body
-    const requestParts: any[] = [{ text: prompt }];
+    const requestParts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [{ text: prompt }];
     
     if (imageData && mimeType) {
       requestParts.push({
