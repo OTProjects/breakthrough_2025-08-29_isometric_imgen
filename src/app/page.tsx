@@ -94,7 +94,7 @@ const GeminiLandingPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyBB8vLUwRHBN37L6FUu_RLE9EnFM0eZmlw'
+          'x-goog-api-key': process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY
         },
         body: JSON.stringify(requestBody)
       });

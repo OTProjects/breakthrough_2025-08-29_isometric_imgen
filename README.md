@@ -36,11 +36,23 @@ Currently configured to use the real Gemini 2.5 Flash Image API. **Note: This AP
 
 ### 2. Environment Configuration
 
-Create a `.env.local` file:
+**🔒 IMPORTANT: Never commit API keys to version control!**
 
-```bash
-GEMINI_API_KEY=your_api_key_here
-```
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Edit `.env.local` and add your API key:
+   ```bash
+   # For client-side access (current implementation)
+   NEXT_PUBLIC_GEMINI_API_KEY=your_google_ai_pro_api_key_here
+   
+   # Alternative: Server-side access (more secure)
+   GEMINI_API_KEY=your_google_ai_pro_api_key_here
+   ```
+
+**Security Note:** The `.env.local` file is automatically ignored by git and will not be committed to the repository.
 
 ### 3. Update the Code
 
@@ -134,6 +146,20 @@ The prompt sent to Gemini is:
 - If you hit quota limits, you'll see "RESOURCE_EXHAUSTED" errors
 - You may need to enable billing in Google Cloud Console for production use
 
+## Security Best Practices
+
+**🔒 API Key Security:**
+- ✅ API keys are now stored in environment variables only
+- ✅ `.env.local` is excluded from version control
+- ✅ `.env.example` provides a safe template
+- ❌ Never commit actual API keys to repositories
+- 🚀 For production: Use your hosting platform's environment variable settings
+
+**Production Deployment:**
+- **Vercel**: Add `NEXT_PUBLIC_GEMINI_API_KEY` in Project Settings → Environment Variables
+- **Netlify**: Add in Site Settings → Environment Variables
+- **Railway/Render**: Add in your service's environment variable section
+
 ## Troubleshooting
 
 **Quota Exceeded Error:**
@@ -141,3 +167,9 @@ The prompt sent to Gemini is:
 2. Check your [Google Cloud Console quotas](https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas)
 3. Enable billing for higher limits
 4. Use a different API key if available
+
+**API Key Issues:**
+1. Ensure `.env.local` exists and contains your API key
+2. Restart the development server after adding environment variables
+3. Check that your API key has image generation permissions
+4. Verify you're using the Google AI Pro subscription for higher quotas
