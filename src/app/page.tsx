@@ -84,7 +84,7 @@ const GeminiLandingPage = () => {
     setError(null);
     
     try {
-      const prompt = `Take this location and make the landmark an isometric image (building only) in the style of ${styleInput}.`;
+      let prompt = `Take this location and make the landmark an isometric image (building only) in the style of ${styleInput}.`;
       
       console.log('🚀 Gemini Image Generation API Call:', {
         prompt,
@@ -92,45 +92,43 @@ const GeminiLandingPage = () => {
         model: 'gemini-2.5-flash-image-preview'
       });
 
-      // Prepare the request body based on input type
-      const requestParts: RequestPart[] = [{ text: prompt }];
+      console.log('📤 Sending request to server API...');
+      
+      // Prepare data for server-side API
+      let imageData = null;
+      let mimeType = null;
       
       if (inputType === 'upload' && imageFile) {
-        const base64Data = await fileToBase64(imageFile);
-        requestParts.push({
-          inline_data: {
-            mime_type: imageFile.type,
-            data: base64Data
-          }
-        });
+        imageData = await fileToBase64(imageFile);
+        mimeType = imageFile.type;
       } else if (inputType === 'url' && landmarkUrl) {
-        // For URL input, we include the URL in the text prompt
-        (requestParts[0] as TextPart).text = `${prompt}\n\nReference image URL: ${landmarkUrl}`;
+        // For URL input, modify the prompt
+        prompt = `${prompt}\n\nReference image URL: ${landmarkUrl}`;
       }
-
-      const requestBody = {
-        contents: [{
-          parts: requestParts
-        }]
-      };
-
-      console.log('📤 Sending request to Gemini Image Generation API...');
       
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent', {
+      const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          prompt,
+          imageData,
+          mimeType
+        })
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `API Error: ${response.status}`);
       }
       
       const result = await response.json();
+      
+      // Handle server API error responses
+      if (result.error) {
+        throw new Error(result.error);
+      }
       console.log('📥 Full Gemini API Response:', JSON.stringify(result, null, 2));
       
       // More detailed logging for debugging

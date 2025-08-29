@@ -45,10 +45,7 @@ Currently configured to use the real Gemini 2.5 Flash Image API. **Note: This AP
 
 2. Edit `.env.local` and add your API key:
    ```bash
-   # For client-side access (current implementation)
-   NEXT_PUBLIC_GEMINI_API_KEY=your_google_ai_pro_api_key_here
-   
-   # Alternative: Server-side access (more secure)
+   # Server-side access (secure implementation)
    GEMINI_API_KEY=your_google_ai_pro_api_key_here
    ```
 
@@ -156,9 +153,9 @@ The prompt sent to Gemini is:
 - 🚀 For production: Use your hosting platform's environment variable settings
 
 **Production Deployment:**
-- **Vercel**: Add `NEXT_PUBLIC_GEMINI_API_KEY` in Project Settings → Environment Variables
-- **Netlify**: Add in Site Settings → Environment Variables
-- **Railway/Render**: Add in your service's environment variable section
+- **Vercel**: Add `GEMINI_API_KEY` in Project Settings → Environment Variables (server-side only)
+- **Netlify**: Add `GEMINI_API_KEY` in Site Settings → Environment Variables  
+- **Railway/Render**: Add `GEMINI_API_KEY` in your service's environment variable section
 
 ## Troubleshooting
 
