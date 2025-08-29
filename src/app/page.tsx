@@ -9,29 +9,55 @@
  */
 
 import React, { useState } from 'react';
+import Image from 'next/image';
+
+interface TextPart {
+  text: string;
+}
+
+interface InlineDataPart {
+  inline_data: {
+    mime_type: string;
+    data: string;
+  };
+}
+
+type RequestPart = TextPart | InlineDataPart;
+
+interface ResponsePart {
+  text?: string;
+  inlineData?: {
+    mimeType: string;
+    data: string;
+  };
+  inline_data?: {
+    mime_type: string;
+    data: string;
+  };
+}
 
 const GeminiLandingPage = () => {
-  const [inputType, setInputType] = useState('upload'); // 'upload' or 'url'
-  const [imageFile, setImageFile] = useState(null);
-  const [landmarkUrl, setLandmarkUrl] = useState('');
-  const [styleInput, setStyleInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState(null);
-  const [error, setError] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [inputType, setInputType] = useState<'upload' | 'url'>('upload');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [landmarkUrl, setLandmarkUrl] = useState<string>('');
+  const [styleInput, setStyleInput] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // Drag and drop handlers
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   };
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const files = e.dataTransfer.files;
@@ -67,7 +93,7 @@ const GeminiLandingPage = () => {
       });
 
       // Prepare the request body based on input type
-      let requestParts = [{ text: prompt }];
+      const requestParts: RequestPart[] = [{ text: prompt }];
       
       if (inputType === 'upload' && imageFile) {
         const base64Data = await fileToBase64(imageFile);
@@ -79,7 +105,7 @@ const GeminiLandingPage = () => {
         });
       } else if (inputType === 'url' && landmarkUrl) {
         // For URL input, we include the URL in the text prompt
-        requestParts[0].text = `${prompt}\n\nReference image URL: ${landmarkUrl}`;
+        (requestParts[0] as TextPart).text = `${prompt}\n\nReference image URL: ${landmarkUrl}`;
       }
 
       const requestBody = {
@@ -94,7 +120,7 @@ const GeminiLandingPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY
+          'x-goog-api-key': process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
         },
         body: JSON.stringify(requestBody)
       });
@@ -118,7 +144,7 @@ const GeminiLandingPage = () => {
       }
       
       // Check for generated image in the response
-      const parts = result.candidates?.[0]?.content?.parts || [];
+      const parts: ResponsePart[] = result.candidates?.[0]?.content?.parts || [];
       let imageFound = false;
       let textFound = false;
       
@@ -154,8 +180,8 @@ const GeminiLandingPage = () => {
       
       if (!imageFound && textFound) {
         // If no image found but we have text, show the text
-        const textPart = parts.find(part => part.text);
-        const responseText = textPart.text;
+        const textPart = parts.find((part: ResponsePart) => part.text);
+        const responseText = textPart?.text || 'No text content available';
         
         // Create a display for the AI's text response
         setGeneratedImage(`data:image/svg+xml;base64,${btoa(`
@@ -179,13 +205,15 @@ const GeminiLandingPage = () => {
     } catch (err) {
       console.error('Gemini API Error:', err);
       
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
       // Check if it's a quota/rate limit error
-      if (err.message.includes('RESOURCE_EXHAUSTED') || err.message.includes('quota')) {
+      if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('quota')) {
         setError('API quota exceeded. The free tier has limits on image generation. Please try again later or upgrade your API plan.');
-      } else if (err.message.includes('429')) {
+      } else if (errorMessage.includes('429')) {
         setError('Rate limit exceeded. Please wait a few minutes before trying again.');
       } else {
-        setError(`Failed to generate image: ${err.message}`);
+        setError(`Failed to generate image: ${errorMessage}`);
       }
     } finally {
       setIsLoading(false);
@@ -193,11 +221,18 @@ const GeminiLandingPage = () => {
   };
 
   // Helper function to convert file to base64 (for actual implementation)
-  const fileToBase64 = (file) => {
+  const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result === 'string') {
+          resolve(result.split(',')[1]);
+        } else {
+          reject(new Error('Failed to read file as string'));
+        }
+      };
       reader.onerror = error => reject(error);
     });
   };
@@ -358,10 +393,13 @@ const GeminiLandingPage = () => {
                 </button>
               </div>
               <div className="border rounded-lg overflow-hidden shadow-lg">
-                <img 
+                <Image 
                   src={generatedImage} 
                   alt="Generated isometric landmark" 
+                  width={400}
+                  height={400}
                   className="w-full h-auto"
+                  unoptimized={true}
                   onError={() => setError('Failed to load generated image')}
                 />
               </div>
